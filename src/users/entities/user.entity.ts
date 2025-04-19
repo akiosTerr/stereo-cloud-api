@@ -7,17 +7,22 @@ import {
     OneToMany,
   } from 'typeorm';
   import { Video } from '../../mux/entities/video.entity';
+import { Exclude } from 'class-transformer';
   
   @Entity('users')
   export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
   
-    @Column()
+    @Column({ unique: true })
     email: string;
   
     @Column()
     name: string;
+
+    @Column()
+    @Exclude() 
+    password: string;
   
     @CreateDateColumn()
     created_at: Date;

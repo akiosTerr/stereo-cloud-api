@@ -1,7 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { MuxService } from './mux.service';
 import { VideoStatus } from './entities/video.entity';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CurrentUser } from 'src/auth/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('mux')
 export class MuxController {
   videosService: any;
@@ -19,17 +22,19 @@ export class MuxController {
 
   @Post()
   create(
-    @Body()
-    body: {
-      user_id: string;
+    @Body() body: {
       upload_id: string;
       asset_id: string;
       playback_id: string;
       title?: string;
       status?: VideoStatus;
-    }
+    },
+    @CurrentUser() user: { userId: string }
   ) {
-    return this.muxService.create(body);
+    return this.muxService.create({
+      user_id: user.userId,
+      ...body,
+    });
   }
 
   @Get()

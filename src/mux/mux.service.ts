@@ -3,13 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
 import { Video, VideoStatus } from './entities/video.entity';
 import { Repository } from 'typeorm';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class MuxService {
     constructor(
         @InjectRepository(Video) private repo: Repository<Video>,
-        private usersService: UsersService
     ) { }
 
     private readonly muxTokenId = process.env.MUX_TOKEN_ID;
@@ -38,7 +36,10 @@ export class MuxService {
         return response.json();
     }
 
-    async createUpload(): Promise<any> {
+    async createUpload(data: {
+        title?: string;
+        userId: string;
+    }): Promise<any> {
         if (!this.muxTokenId || !this.muxTokenSecret) {
             throw new InternalServerErrorException('MUX credentials are missing');
         }
@@ -56,6 +57,10 @@ export class MuxService {
                 new_asset_settings: {
                     playback_policy: ['public'],
                     video_quality: 'basic',
+                    meta: {
+                        title: data.title ? data.title : '',
+                        creator_id: data.userId
+                    }
                 },
             }),
         });
@@ -68,7 +73,7 @@ export class MuxService {
         return response.json();
     }
 
-    async create(data: {
+    async createVideo(data: {
         user_id: string;
         upload_id: string;
         asset_id: string;

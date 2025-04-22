@@ -8,6 +8,7 @@ import { Video } from './mux/entities/video.entity';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { AuthModule } from './auth/auth.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { AuthModule } from './auth/auth.module';
     TypeOrmModule.forFeature([Video]),
     MuxModule,
     UsersModule,
-    AuthModule
+    AuthModule,
+    WebhooksModule
   ],
   controllers: [AppController],
   providers: [AppService],

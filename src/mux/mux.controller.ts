@@ -16,12 +16,15 @@ export class MuxController {
   }
 
   @Post('upload')
-  async createUpload() {
-    return this.muxService.createUpload();
+  async createUpload(@Body() body: {
+    title?: string
+  }, @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.createUpload({ userId: user.userId, ...body });
   }
 
   @Post()
-  create(
+  createVideo(
     @Body() body: {
       upload_id: string;
       asset_id: string;
@@ -31,7 +34,7 @@ export class MuxController {
     },
     @CurrentUser() user: { userId: string }
   ) {
-    return this.muxService.create({
+    return this.muxService.createVideo({
       user_id: user.userId,
       ...body,
     });

@@ -10,8 +10,9 @@ import {
 import { User } from '../../users/entities/user.entity';
 
 export enum VideoStatus {
-    PREPARING = 'preparing',
-    READY = 'ready',
+    PREPARING = "preparing",
+    CREATED = 'video.asset.created',
+    READY = 'video.asset.ready',
 }
 
 @Entity('videos')

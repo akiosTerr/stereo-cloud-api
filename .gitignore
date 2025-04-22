@@ -36,4 +36,4 @@ lerna-debug.log*
 
 # others
 .env
-.sqlite
+*.sqlite

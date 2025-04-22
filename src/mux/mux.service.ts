@@ -86,7 +86,7 @@ export class MuxService {
     }
 
     findAll() {
-        return this.repo.find({ relations: ['user'] });
+        return this.repo.find();
     }
 
     findOne(id: string) {

@@ -40,9 +40,16 @@ export class MuxController {
     });
   }
 
+  @Post('sign/:playback_id')
+  signVideoToken(@Param('playback_id') playback_id: string) {
+    return this.muxService.signVideoToken(playback_id);
+  }
+
   @Get()
-  findAll() {
-    return this.muxService.findAll();
+  findAll(
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.findAll(user.userId);
   }
 
   @Get(':id')
@@ -51,7 +58,8 @@ export class MuxController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.muxService.remove(id);
+  async remove(@Param('id') id: string) {
+    const video = await this.findOne(id)
+    return this.muxService.remove(id, video.asset_id);
   }
 }

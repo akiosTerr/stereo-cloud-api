@@ -48,6 +48,8 @@ export class WebhooksController {
       }
       this.muxService.createVideo(videoData)
       console.log(`New video created: asset_id=${assetId}, upload_id=${uploadId}`);
+    } else if (eventType === VideoStatus.READY) {
+      
     }
 
     return 'OK';

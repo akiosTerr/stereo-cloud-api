@@ -115,10 +115,10 @@ export class MuxService {
             expiration: '1d',
         }
 
-        const token = await this.muxClient.jwt.signPlaybackId(playback_id, { ...baseOptions, type: 'video' });
+        const tokenVideo = await this.muxClient.jwt.signPlaybackId(playback_id, { ...baseOptions, type: 'video' });
+        const tokenThumbnail = await this.muxClient.jwt.signPlaybackId(playback_id, { ...baseOptions, type: 'thumbnail' });
 
-        return { token }
-
+        return { tokenVideo, tokenThumbnail }
 
         // const secretKey = Buffer.from(
         //     this.muxSigningSecret,

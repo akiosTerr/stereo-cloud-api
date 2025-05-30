@@ -45,6 +45,9 @@ export class Video {
     })
     status: VideoStatus;
 
+    @Column({ default: false })
+    isPrivate: boolean;
+
     @CreateDateColumn()
     created_at: Date;
 

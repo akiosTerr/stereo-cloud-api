@@ -151,8 +151,8 @@ export class MuxService {
         });
     }
 
-    findOne(id: string) {
-        return this.repo.findOne({ where: { id }, relations: ['user'] });
+    findOne(playback_id: string) {
+        return this.repo.findOne({ where: { playback_id }, relations: ['user'] });
     }
 
     async remove(id: string, asset_id: string) {

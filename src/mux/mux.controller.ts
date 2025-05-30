@@ -52,9 +52,9 @@ export class MuxController {
     return this.muxService.findAll(user.userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.muxService.findOne(id);
+  @Get(':playback_id')
+  findOne(@Param('playback_id') playback_id: string) {
+    return this.muxService.findOne(playback_id);
   }
 
   @Delete(':id')

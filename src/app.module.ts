@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { AuthModule } from './auth/auth.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import typeOrmConfig from './config/typeorm.config';
 
 @Module({
   imports: [
@@ -16,12 +17,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       envFilePath: '.env',
       isGlobal: true,
     }),
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'database.sqlite',
-      entities: [User, Video],
-      synchronize: true,
-    }),
+    TypeOrmModule.forRoot(typeOrmConfig),
     TypeOrmModule.forFeature([Video]),
     MuxModule,
     UsersModule,

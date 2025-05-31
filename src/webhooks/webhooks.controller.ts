@@ -14,7 +14,7 @@ type MuxBodyWebHook = {
         title?: string
         creator_id: string
       }
-      playback_ids : [{id: string}]
+      playback_ids : [{id: string, policy: string}]
     }
 }
 
@@ -43,13 +43,18 @@ export class WebhooksController {
         upload_id: body?.data?.upload_id,
         asset_id: body?.data?.id,
         playback_id: body?.data?.playback_ids[0].id,
+        isPrivate: body?.data?.playback_ids[0].policy === 'signed',
         title: body?.data?.meta.title,
-        status: VideoStatus.CREATED
+        status: VideoStatus.CREATED,
       }
       this.muxService.createVideo(videoData)
       console.log(`New video created: asset_id=${assetId}, upload_id=${uploadId}`);
     } else if (eventType === VideoStatus.READY) {
-      
+      this.muxService.updateVideoStatus({
+        asset_id: assetId,
+        status: VideoStatus.READY
+      })
+      console.log(`Video updated: asset_id=${assetId}, upload_id=${uploadId}`);
     }
 
     return 'OK';

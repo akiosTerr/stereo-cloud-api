@@ -18,6 +18,7 @@ export class MuxController {
   @Post('upload')
   async createUpload(@Body() body: {
     title?: string
+    isPrivate?: boolean
   }, @CurrentUser() user: { userId: string }
   ) {
     return this.muxService.createUpload({ userId: user.userId, ...body });
@@ -54,12 +55,11 @@ export class MuxController {
 
   @Get(':playback_id')
   findOne(@Param('playback_id') playback_id: string) {
-    return this.muxService.findOne(playback_id);
+    return this.muxService.findByPlaybackId(playback_id);
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    const video = await this.findOne(id)
-    return this.muxService.remove(id, video.asset_id);
+  @Delete(':id/:asset_id')
+  async remove(@Param('id') id: string, @Param('asset_id') asset_id: string) {
+    return this.muxService.remove(id, asset_id);
   }
 }

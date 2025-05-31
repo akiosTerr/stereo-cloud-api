@@ -60,6 +60,7 @@ export class MuxService {
 
     async createUpload(data: {
         title?: string;
+        isPrivate?: boolean
         userId: string;
     }): Promise<any> {
         if (!this.muxTokenId || !this.muxTokenSecret) {
@@ -67,6 +68,8 @@ export class MuxService {
         }
 
         const credentials = Buffer.from(`${this.muxTokenId}:${this.muxTokenSecret}`).toString('base64');
+
+        const policy = data.isPrivate ? PlaybackPolicy.signed : PlaybackPolicy.public;
 
         const response = await fetch('https://api.mux.com/video/v1/uploads', {
             method: 'POST',
@@ -77,11 +80,11 @@ export class MuxService {
             body: JSON.stringify({
                 cors_origin: '*',
                 new_asset_settings: {
-                    playback_policies: [PlaybackPolicy.signed],
+                    playback_policies: [policy],
                     video_quality: VideoQuality.plus,
                     meta: {
                         title: data.title ? data.title : '',
-                        creator_id: data.userId
+                        creator_id: data.userId,
                     }
                 },
             }),
@@ -101,9 +104,22 @@ export class MuxService {
         asset_id: string;
         playback_id: string;
         title?: string;
+        isPrivate?: boolean;
         status?: VideoStatus;
     }) {
         const video = this.repo.create({ ...data });
+        return this.repo.save(video);
+    }
+
+    async updateVideoStatus(data: {
+        asset_id: string;
+        status?: VideoStatus;
+    }) {
+        const video = await this.repo.findOne({ where: { asset_id: data.asset_id } });
+        if (!video) {
+            throw new InternalServerErrorException('Video not found');
+        }
+        video.status = data.status;
         return this.repo.save(video);
     }
 
@@ -151,8 +167,12 @@ export class MuxService {
         });
     }
 
-    findOne(playback_id: string) {
+    findByPlaybackId(playback_id: string) {
         return this.repo.findOne({ where: { playback_id }, relations: ['user'] });
+    }
+
+    findById(id: string) {
+        return this.repo.findOne({ where: { id } });
     }
 
     async remove(id: string, asset_id: string) {

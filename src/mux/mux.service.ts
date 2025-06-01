@@ -161,9 +161,15 @@ export class MuxService {
         // return {token}
     }
 
-    findAll(user_id: string) {
+    findAllPrivate(user_id: string) {
         return this.repo.find({
-            where: { user_id },
+            where: { user_id, isPrivate: true },
+        });
+    }
+
+    findAllPublic(user_id: string) {
+        return this.repo.find({
+            where: { user_id, isPrivate: false },
         });
     }
 
@@ -172,7 +178,7 @@ export class MuxService {
     }
 
     findById(id: string) {
-        return this.repo.findOne({ where: { id } });
+        return this.repo.findOne({ where: { id }, relations: ['user'] });
     }
 
     async remove(id: string, asset_id: string) {

@@ -50,7 +50,14 @@ export class MuxController {
   findAll(
     @CurrentUser() user: { userId: string }
   ) {
-    return this.muxService.findAll(user.userId);
+    return this.muxService.findAllPublic(user.userId);
+  }
+
+  @Get('private')
+  findAllPrivate(
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.findAllPrivate(user.userId);
   }
 
   @Get(':playback_id')

@@ -1,7 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
-import * as JWT from 'jsonwebtoken';
 import Mux from '@mux/mux-node';
 import { Video, VideoStatus } from './entities/video.entity';
 import { Repository } from 'typeorm';

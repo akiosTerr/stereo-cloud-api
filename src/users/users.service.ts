@@ -26,11 +26,11 @@ export class UsersService {
   }
 
   findAll() {
-    return this.repo.find({ relations: ['videos'] });
+    return this.repo.find();
   }
 
   findOne(id: string) {
-    return this.repo.findOne({ where: { id }, relations: ['videos'] });
+    return this.repo.findOne({ where: { id } });
   }
 
   remove(id: string) {

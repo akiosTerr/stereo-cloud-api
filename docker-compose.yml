@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./database.sqlite:/app/data/database.sqlite
+      - cloud-midia-data:/app/data
+      - ./config:/app/config
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/database.sqlite
+    restart: unless-stopped                         
+
+volumes:
+  cloud-midia-data:
+    name: cloud-midia-data 

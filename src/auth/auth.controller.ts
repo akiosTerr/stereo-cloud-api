@@ -1,6 +1,7 @@
-import { Controller, Post, Body, ConflictException } from '@nestjs/common';
+import { Controller, Post, Body, ConflictException, Get, UseGuards, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -26,5 +27,32 @@ export class AuthController {
   async login(@Body() body: { email: string; password: string }) {
     const user = await this.authService.validateUser(body.email, body.password);
     return this.authService.login({ id: user.id, email: user.email });
+  }
+
+  @Post('validateToken')
+  async validateToken(@Body() body: { token?: string }, @Headers('authorization') authHeader?: string) {
+    let token: string | undefined;
+    
+    // Try to get token from body first
+    if (body.token) {
+      token = body.token;
+    } 
+    // Otherwise, try to extract from Authorization header
+    else if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+    
+    if (!token) {
+      return { valid: false, error: 'Token not provided' };
+    }
+    
+    return this.authService.validateToken(token);
+  }
+
+  @Get('validateToken')
+  @UseGuards(JwtAuthGuard)
+  async validateTokenFromHeader() {
+    // This endpoint validates token from Authorization header using the guard
+    return { valid: true, message: 'Token is valid' };
   }
 }

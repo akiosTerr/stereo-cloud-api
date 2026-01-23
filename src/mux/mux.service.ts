@@ -1,5 +1,7 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import fetch from 'node-fetch';
 import Mux from '@mux/mux-node';
 import { Video, VideoStatus } from './entities/video.entity';
@@ -16,10 +18,19 @@ enum PlaybackPolicy {
     signed = "signed",
 }
 
+interface MuxAsset {
+    id: string;
+    playback_ids: {
+        id: string;
+        policy: PlaybackPolicy;
+    }[];
+}
+
 @Injectable()
 export class MuxService {
     constructor(
         @InjectRepository(Video) private repo: Repository<Video>,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
     private readonly muxTokenId = process.env.MUX_TOKEN_ID;
@@ -54,11 +65,16 @@ export class MuxService {
             throw new InternalServerErrorException(`Mux API error: ${error}`);
         }
 
-        return response.json();
+        const assets = (await response.json()).data;    
+
+        const filteredAssets = assets.filter((asset: MuxAsset) => asset.playback_ids[0].policy === PlaybackPolicy.public);
+
+        return filteredAssets;
     }
 
     async createUpload(data: {
         title?: string;
+        description?: string;
         isPrivate?: boolean
         userId: string;
     }): Promise<any> {
@@ -94,7 +110,17 @@ export class MuxService {
             throw new InternalServerErrorException(`Mux upload failed: ${errorText}`);
         }
 
-        return response.json();
+        const uploadResponse = await response.json();
+        
+       
+        const uploadId = uploadResponse?.data?.id || uploadResponse?.id;
+        if (data.description && uploadId) {
+            const cacheKey = `description_${uploadId}`;
+            // Cache for 1 hour (3600000 ms) - webhook should arrive much sooner
+            await this.cacheManager.set(cacheKey, data.description, 3600000);
+        }
+
+        return uploadResponse;
     }
 
     async createVideo(data: {
@@ -103,6 +129,7 @@ export class MuxService {
         asset_id: string;
         playback_id: string;
         title?: string;
+        description?: string;
         isPrivate?: boolean;
         status?: VideoStatus;
     }) {

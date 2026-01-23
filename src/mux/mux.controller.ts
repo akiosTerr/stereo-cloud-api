@@ -18,6 +18,7 @@ export class MuxController {
   @Post('upload')
   async createUpload(@Body() body: {
     title?: string
+    description?: string
     isPrivate?: boolean
   }, @CurrentUser() user: { userId: string }
   ) {
@@ -31,6 +32,7 @@ export class MuxController {
       asset_id: string;
       playback_id: string;
       title?: string;
+      description?: string;
       status?: VideoStatus;
     },
     @CurrentUser() user: { userId: string }

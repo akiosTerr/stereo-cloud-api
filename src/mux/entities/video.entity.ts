@@ -39,6 +39,9 @@ export class Video {
     @Column({ nullable: true })
     title?: string;
 
+    @Column({ nullable: true, type: 'text' })
+    description?: string;
+
     @Column({
         type: 'text',
         default: VideoStatus.PREPARING,

@@ -16,7 +16,10 @@ import { Exclude } from 'class-transformer';
   
     @Column({ unique: true })
     email: string;
-  
+
+    @Column({ unique: true})
+    channel_name: string;
+
     @Column()
     name: string;
 

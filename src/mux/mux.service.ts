@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import Mux from '@mux/mux-node';
 import { Video, VideoStatus } from './entities/video.entity';
 import { Repository } from 'typeorm';
+import { UsersService } from 'src/users/users.service';
 
 enum VideoQuality {
     basic = "basic",
@@ -31,6 +32,7 @@ export class MuxService {
     constructor(
         @InjectRepository(Video) private repo: Repository<Video>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        private usersService: UsersService,
     ) { }
 
     private readonly muxTokenId = process.env.MUX_TOKEN_ID;
@@ -130,9 +132,14 @@ export class MuxService {
         playback_id: string;
         title?: string;
         description?: string;
+        channel_name?: string;
         isPrivate?: boolean;
         status?: VideoStatus;
     }) {
+        const user = await this.usersService.findOne(data.user_id);
+        if (user && user.channel_name) {
+            data.channel_name = user.channel_name;
+        }
         const video = this.repo.create({ ...data });
         return this.repo.save(video);
     }
@@ -197,6 +204,10 @@ export class MuxService {
         return this.repo.find({
             where: { user_id, isPrivate: false },
         });
+    }
+
+    getHomeVideos() {
+        return this.repo.find({ where: { isPrivate: false }, order: { created_at: 'DESC' }, take: 12 });
     }
 
     findByPlaybackId(playback_id: string) {

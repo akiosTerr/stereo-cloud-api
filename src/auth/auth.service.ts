@@ -15,10 +15,11 @@ export class AuthService {
     return user;
   }
 
-  async login(user: { id: string; email: string }) {
+  async login(user: { id: string; email: string; channel_name: string }) {
     const payload = { sub: user.id, email: user.email };
     return {
       access_token: this.jwtService.sign(payload),
+      channel_name: user.channel_name,
     };
   }
 

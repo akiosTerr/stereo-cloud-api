@@ -55,6 +55,12 @@ export class MuxController {
     return this.muxService.findAllPublic(user.userId);
   }
 
+  @Get('home')
+  getHomeVideos(
+  ) {
+    return this.muxService.getHomeVideos();
+  }
+
   @Get('private')
   findAllPrivate(
     @CurrentUser() user: { userId: string }

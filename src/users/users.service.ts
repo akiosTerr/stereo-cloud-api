@@ -8,9 +8,9 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   constructor(@InjectRepository(User) private repo: Repository<User>) {}
 
-  async create(email: string, name: string, password: string) {
+  async create(email: string, name: string, password: string, channel_name: string) {
     const hash = await bcrypt.hash(password, 10);
-    const user = this.repo.create({ email, name, password: hash });
+    const user = this.repo.create({ email, name, password: hash, channel_name });
     return this.repo.save(user);
   }
 

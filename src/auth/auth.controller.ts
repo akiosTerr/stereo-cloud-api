@@ -11,10 +11,10 @@ export class AuthController {
   ) {}
 
   @Post('signup')
-  async signup(@Body() body: { email: string; name: string; password: string }) {
+  async signup(@Body() body: { email: string; name: string; password: string; channel_name: string }) {
     try {
-      const user = await this.usersService.create(body.email, body.name, body.password);
-      return this.authService.login({ id: user.id, email: user.email });
+      const user = await this.usersService.create(body.email, body.name, body.password, body.channel_name);
+      return this.authService.login({ id: user.id, email: user.email, channel_name: user.channel_name });
     } catch (err) {
       if (err.code === 'SQLITE_CONSTRAINT') {
         throw new ConflictException('Email already exists');
@@ -26,7 +26,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
     const user = await this.authService.validateUser(body.email, body.password);
-    return this.authService.login({ id: user.id, email: user.email });
+    return this.authService.login({ id: user.id, email: user.email, channel_name: user.channel_name });
   }
 
   @Post('validateToken')

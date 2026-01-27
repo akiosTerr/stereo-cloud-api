@@ -8,6 +8,7 @@ export type MuxBodyWebHook = {
     data: {
       id: string
       upload_id: string
+      duration: number
       meta: {
         title?: string
         creator_id: string

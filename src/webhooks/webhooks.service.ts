@@ -52,7 +52,8 @@ export class WebhooksService {
         } else if (eventType === VideoStatus.READY) {
             this.muxService.updateVideoStatus({
                 asset_id: assetId,
-                status: VideoStatus.READY
+                status: VideoStatus.READY,
+                duration: body?.data?.duration,
             })
             console.log(`Video updated: asset_id=${assetId}, upload_id=${uploadId}`);
         }

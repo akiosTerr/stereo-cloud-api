@@ -5,7 +5,7 @@ import { Cache } from 'cache-manager';
 import fetch from 'node-fetch';
 import Mux from '@mux/mux-node';
 import { Video, VideoStatus } from './entities/video.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
 
 enum VideoQuality {
@@ -147,12 +147,14 @@ export class MuxService {
     async updateVideoStatus(data: {
         asset_id: string;
         status?: VideoStatus;
+        duration?: number;
     }) {
         const video = await this.repo.findOne({ where: { asset_id: data.asset_id } });
         if (!video) {
             throw new InternalServerErrorException('Video not found');
         }
         video.status = data.status;
+        video.duration = data.duration;
         return this.repo.save(video);
     }
 
@@ -222,6 +224,14 @@ export class MuxService {
 
     findById(id: string) {
         return this.repo.findOne({ where: { id }, relations: ['user'] });
+    }
+
+    findProfileByChannelName(channel_name: string) {
+        console.log(channel_name);
+        return this.repo.find({
+            where: { channel_name: Like(`%${channel_name}%`), isPrivate: false },
+            order: { created_at: 'DESC' },
+        });
     }
 
     async remove(id: string, asset_id: string) {

@@ -34,6 +34,7 @@ export class MuxController {
       title?: string;
       description?: string;
       status?: VideoStatus;
+      duration?: number;
     },
     @CurrentUser() user: { userId: string }
   ) {
@@ -70,6 +71,11 @@ export class MuxController {
     @CurrentUser() user: { userId: string }
   ) {
     return this.muxService.findAllPrivate(user.userId);
+  }
+
+  @Get('profile/:channel_name')
+  findProfileByChannelName(@Param('channel_name') channel_name: string) {
+    return this.muxService.findProfileByChannelName(channel_name);
   }
 
   @Get(':playback_id')

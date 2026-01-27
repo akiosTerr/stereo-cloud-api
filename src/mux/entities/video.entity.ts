@@ -42,6 +42,9 @@ export class Video {
     @Column({ nullable: true, type: 'text' })
     description?: string;
 
+    @Column({ nullable: true, type: 'float' })
+    duration?: number;
+
     @Column({ nullable: true })
     channel_name?: string;
 

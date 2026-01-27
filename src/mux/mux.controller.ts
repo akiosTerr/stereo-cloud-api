@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { MuxService } from './mux.service';
 import { VideoStatus } from './entities/video.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -57,8 +57,12 @@ export class MuxController {
 
   @Get('home')
   getHomeVideos(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.muxService.getHomeVideos();
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.muxService.getHomeVideos(pageNum, limitNum);
   }
 
   @Get('private')

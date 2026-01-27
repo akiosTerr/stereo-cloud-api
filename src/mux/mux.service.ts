@@ -206,8 +206,14 @@ export class MuxService {
         });
     }
 
-    getHomeVideos() {
-        return this.repo.find({ where: { isPrivate: false }, order: { created_at: 'DESC' }, take: 12 });
+    getHomeVideos(page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
+        return this.repo.find({ 
+            where: { isPrivate: false }, 
+            order: { created_at: 'DESC' }, 
+            take: limit,
+            skip: skip
+        });
     }
 
     findByPlaybackId(playback_id: string) {

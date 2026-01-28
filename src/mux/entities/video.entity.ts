@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { SharedVideo } from './shared-video.entity';
+import { Comment } from './comment.entity';
 
 export enum VideoStatus {
     PREPARING = "preparing",
@@ -67,4 +68,7 @@ export class Video {
 
     @OneToMany(() => SharedVideo, (sharedVideo) => sharedVideo.video)
     sharedWith: SharedVideo[];
+
+    @OneToMany(() => Comment, (comment) => comment.video)
+    comments: Comment[];
 }

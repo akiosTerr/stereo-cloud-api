@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import Mux from '@mux/mux-node';
 import { Video, VideoStatus } from './entities/video.entity';
 import { SharedVideo } from './entities/shared-video.entity';
+import { Comment } from './entities/comment.entity';
 import { Like, Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
 
@@ -33,6 +34,7 @@ export class MuxService {
     constructor(
         @InjectRepository(Video) private repo: Repository<Video>,
         @InjectRepository(SharedVideo) private sharedVideoRepo: Repository<SharedVideo>,
+        @InjectRepository(Comment) private commentRepo: Repository<Comment>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private usersService: UsersService,
     ) { }
@@ -372,6 +374,105 @@ export class MuxService {
         });
 
         return !!sharedVideo;
+    }
+
+    async createComment(videoId: string, userId: string, content: string) {
+        // Validate content
+        const trimmedContent = content?.trim() || '';
+        if (!trimmedContent) {
+            throw new InternalServerErrorException('Comment content cannot be empty');
+        }
+        if (trimmedContent.length > 1000) {
+            throw new InternalServerErrorException('Comment content must not exceed 1000 characters');
+        }
+
+        // Verify video exists
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+
+        // Verify user exists
+        const user = await this.usersService.findOne(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Create comment
+        const comment = this.commentRepo.create({
+            video_id: videoId,
+            user_id: userId,
+            content: trimmedContent,
+        });
+
+        const savedComment = await this.commentRepo.save(comment);
+        
+        // Return comment with user info
+        return this.commentRepo.findOne({
+            where: { id: savedComment.id },
+            relations: ['user'],
+        });
+    }
+
+    async getCommentsByVideoId(videoId: string) {
+        // Verify video exists
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+
+        // Get comments ordered by newest first
+        const comments = await this.commentRepo.find({
+            where: { video_id: videoId },
+            relations: ['user'],
+            order: { created_at: 'DESC' },
+        });
+
+        return comments.map(comment => ({
+            id: comment.id,
+            video_id: comment.video_id,
+            user_id: comment.user_id,
+            content: comment.content,
+            created_at: comment.created_at,
+            updated_at: comment.updated_at,
+            user: {
+                id: comment.user.id,
+                name: comment.user.name,
+                channel_name: comment.user.channel_name,
+                email: comment.user.email,
+            },
+        }));
+    }
+
+    async deleteComment(commentId: string, userId: string) {
+        const comment = await this.commentRepo.findOne({
+            where: { id: commentId },
+            relations: ['user'],
+        });
+
+        if (!comment) {
+            throw new NotFoundException('Comment not found');
+        }
+
+        // Verify ownership
+        if (comment.user_id !== userId) {
+            throw new ForbiddenException('You can only delete your own comments');
+        }
+
+        await this.commentRepo.delete(commentId);
+        return { message: 'Comment deleted successfully' };
+    }
+
+    async hasAccessToComment(userId: string, commentId: string): Promise<boolean> {
+        const comment = await this.commentRepo.findOne({
+            where: { id: commentId },
+        });
+
+        if (!comment) {
+            return false;
+        }
+
+        return comment.user_id === userId;
     }
 
 }

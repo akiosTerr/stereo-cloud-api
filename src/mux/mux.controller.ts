@@ -3,6 +3,7 @@ import { MuxService } from './mux.service';
 import { VideoStatus } from './entities/video.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/current-user.decorator';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('mux')
@@ -106,6 +107,28 @@ export class MuxController {
     @CurrentUser() user: { userId: string }
   ) {
     return this.muxService.getUsersVideoIsSharedWith(videoId, user.userId);
+  }
+
+  @Get('video/:videoId/comments')
+  async getComments(@Param('videoId') videoId: string) {
+    return this.muxService.getCommentsByVideoId(videoId);
+  }
+
+  @Post('video/:videoId/comments')
+  async createComment(
+    @Param('videoId') videoId: string,
+    @Body() createCommentDto: CreateCommentDto,
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.createComment(videoId, user.userId, createCommentDto.content);
+  }
+
+  @Delete('comments/:commentId')
+  async deleteComment(
+    @Param('commentId') commentId: string,
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.deleteComment(commentId, user.userId);
   }
 
   @Get(':playback_id')

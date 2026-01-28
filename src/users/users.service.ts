@@ -36,4 +36,19 @@ export class UsersService {
   remove(id: string) {
     return this.repo.delete(id);
   }
+
+  async searchUsers(query: string, excludeUserId?: string) {
+    const searchTerm = `%${query}%`;
+    const queryBuilder = this.repo
+      .createQueryBuilder('user')
+      .where('(user.email LIKE :searchTerm OR user.name LIKE :searchTerm)', { searchTerm })
+      .select(['user.id', 'user.email', 'user.name', 'user.channel_name'])
+      .limit(20);
+
+    if (excludeUserId) {
+      queryBuilder.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+
+    return queryBuilder.getMany();
+  }
 }

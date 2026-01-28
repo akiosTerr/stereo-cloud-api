@@ -64,7 +64,7 @@ export class MuxController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.muxService.getHomeVideos(pageNum, limitNum);
-  }
+  } 
 
   @Get('private')
   findAllPrivate(
@@ -76,6 +76,36 @@ export class MuxController {
   @Get('profile/:channel_name')
   findProfileByChannelName(@Param('channel_name') channel_name: string) {
     return this.muxService.findProfileByChannelName(channel_name);
+  }
+
+  @Post('share')
+  async shareVideo(
+    @Body() body: { videoId: string; userId: string },
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.shareVideoWithUser(body.videoId, body.userId, user.userId);
+  }
+
+  @Delete('share/:videoId/:userId')
+  async unshareVideo(
+    @Param('videoId') videoId: string,
+    @Param('userId') userId: string,
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.unshareVideoWithUser(videoId, userId, user.userId);
+  }
+
+  @Get('shared')
+  async getSharedVideos(@CurrentUser() user: { userId: string }) {
+    return this.muxService.getSharedVideosForUser(user.userId);
+  }
+
+  @Get('video/:videoId/shared-with')
+  async getUsersVideoIsSharedWith(
+    @Param('videoId') videoId: string,
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.getUsersVideoIsSharedWith(videoId, user.userId);
   }
 
   @Get(':playback_id')

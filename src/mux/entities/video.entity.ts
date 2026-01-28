@@ -5,9 +5,11 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     ManyToOne,
+    OneToMany,
     JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { SharedVideo } from './shared-video.entity';
 
 export enum VideoStatus {
     PREPARING = "preparing",
@@ -62,4 +64,7 @@ export class Video {
 
     @UpdateDateColumn()
     updated_at: Date;
+
+    @OneToMany(() => SharedVideo, (sharedVideo) => sharedVideo.video)
+    sharedWith: SharedVideo[];
 }

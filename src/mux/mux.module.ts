@@ -3,9 +3,10 @@ import { MuxService } from './mux.service';
 import { MuxController } from './mux.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Video } from './entities/video.entity';
+import { SharedVideo } from './entities/shared-video.entity';
 import { UsersModule } from 'src/users/users.module';
 @Module({
-  imports: [TypeOrmModule.forFeature([Video]), UsersModule],
+  imports: [TypeOrmModule.forFeature([Video, SharedVideo]), UsersModule],
   controllers: [MuxController],
   providers: [MuxService],
   exports: [MuxService]

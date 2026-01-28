@@ -1,5 +1,7 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CurrentUser } from 'src/auth/current-user.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -8,6 +10,18 @@ export class UsersController {
   @Get()
   findAll() { 
     return this.usersService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  searchUsers(
+    @Query('q') query: string,
+    @CurrentUser() user: { userId: string }
+  ) {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    return this.usersService.searchUsers(query.trim(), user.userId);
   }
 
   @Get(':id')

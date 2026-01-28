@@ -1,10 +1,11 @@
-import { Injectable, InternalServerErrorException, Inject } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import fetch from 'node-fetch';
 import Mux from '@mux/mux-node';
 import { Video, VideoStatus } from './entities/video.entity';
+import { SharedVideo } from './entities/shared-video.entity';
 import { Like, Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
 
@@ -31,6 +32,7 @@ interface MuxAsset {
 export class MuxService {
     constructor(
         @InjectRepository(Video) private repo: Repository<Video>,
+        @InjectRepository(SharedVideo) private sharedVideoRepo: Repository<SharedVideo>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private usersService: UsersService,
     ) { }
@@ -109,7 +111,7 @@ export class MuxService {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new InternalServerErrorException(`Mux upload failed: ${errorText}`);
+            throw new InternalServerErrorException(`Mux upload  failed: ${errorText}`);
         }
 
         const uploadResponse = await response.json();
@@ -196,10 +198,11 @@ export class MuxService {
         // return {token}
     }
 
-    findAllPrivate(user_id: string) {
-        return this.repo.find({
+    async findAllPrivate(user_id: string) {
+        const ownVideos = await this.repo.find({
             where: { user_id, isPrivate: true },
         });
+        return ownVideos;
     }
 
     findAllPublic(user_id: string) {
@@ -254,6 +257,119 @@ export class MuxService {
         });
 
         return this.repo.delete(id);
+    }
+
+    async shareVideoWithUser(videoId: string, sharedWithUserId: string, sharedByUserId: string) {
+        // Verify video exists and belongs to the user sharing it
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+        if (video.user_id !== sharedByUserId) {
+            throw new ForbiddenException('You can only share your own videos');
+        }
+
+        // Verify the user to share with exists
+        const sharedWithUser = await this.usersService.findOne(sharedWithUserId);
+        if (!sharedWithUser) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Check if already shared
+        const existing = await this.sharedVideoRepo.findOne({
+            where: { video_id: videoId, shared_with_user_id: sharedWithUserId },
+        });
+
+        if (existing) {
+            return existing; // Already shared
+        }
+
+        // Create share record
+        const sharedVideo = this.sharedVideoRepo.create({
+            video_id: videoId,
+            shared_with_user_id: sharedWithUserId,
+            shared_by_user_id: sharedByUserId,
+        });
+
+        return this.sharedVideoRepo.save(sharedVideo);
+    }
+
+    async unshareVideoWithUser(videoId: string, sharedWithUserId: string, sharedByUserId: string) {
+        // Verify video exists and belongs to the user
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+        if (video.user_id !== sharedByUserId) {
+            throw new ForbiddenException('You can only unshare your own videos');
+        }
+
+        const result = await this.sharedVideoRepo.delete({
+            video_id: videoId,
+            shared_with_user_id: sharedWithUserId,
+        });
+
+        return result;
+    }
+
+    async getSharedVideosForUser(userId: string) {
+        const sharedVideos = await this.sharedVideoRepo.find({
+            where: { shared_with_user_id: userId },
+            relations: ['video', 'video.user', 'sharedByUser'],
+        });
+
+        return sharedVideos.map(sv => ({
+            ...sv.video,
+            sharedBy: {
+                id: sv.sharedByUser.id,
+                name: sv.sharedByUser.name,
+                email: sv.sharedByUser.email,
+                channel_name: sv.sharedByUser.channel_name,
+            },
+        }));
+    }
+
+    async getUsersVideoIsSharedWith(videoId: string, ownerUserId: string) {
+        // Verify video exists and belongs to the user
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+        if (video.user_id !== ownerUserId) {
+            throw new ForbiddenException('You can only view sharing status of your own videos');
+        }
+
+        const sharedVideos = await this.sharedVideoRepo.find({
+            where: { video_id: videoId },
+            relations: ['sharedWithUser'],
+        });
+
+        return sharedVideos.map(sv => ({
+            id: sv.sharedWithUser.id,
+            name: sv.sharedWithUser.name,
+            email: sv.sharedWithUser.email,
+            channel_name: sv.sharedWithUser.channel_name,
+            shared_at: sv.created_at,
+        }));
+    }
+
+    async hasAccessToVideo(userId: string, videoId: string): Promise<boolean> {
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            return false;
+        }
+
+        // User owns the video
+        if (video.user_id === userId) {
+            return true;
+        }
+
+        // Check if video is shared with user
+        const sharedVideo = await this.sharedVideoRepo.findOne({
+            where: { video_id: videoId, shared_with_user_id: userId },
+        });
+
+        return !!sharedVideo;
     }
 
 }

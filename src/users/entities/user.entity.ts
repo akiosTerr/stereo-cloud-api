@@ -7,6 +7,7 @@ import {
     OneToMany,
   } from 'typeorm';
   import { Video } from '../../mux/entities/video.entity';
+  import { SharedVideo } from '../../mux/entities/shared-video.entity';
 import { Exclude } from 'class-transformer';
   
   @Entity('users')
@@ -35,4 +36,7 @@ import { Exclude } from 'class-transformer';
   
     @OneToMany(() => Video, (video) => video.user)
     videos: Video[];
+
+    @OneToMany(() => SharedVideo, (sharedVideo) => sharedVideo.sharedWithUser)
+    sharedVideos: SharedVideo[];
   }

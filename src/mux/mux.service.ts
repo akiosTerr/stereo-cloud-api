@@ -256,6 +256,8 @@ export class MuxService {
             }),
         });
 
+        await this.sharedVideoRepo.delete({ video_id: id });
+
         return this.repo.delete(id);
     }
 

@@ -27,6 +27,15 @@ import { Exclude } from 'class-transformer';
     @Column()
     @Exclude() 
     password: string;
+
+    @Column({ default: false })
+    email_verified: boolean;
+
+    @Column({ nullable: true })
+    email_verification_token: string | null;
+
+    @Column('datetime', { nullable: true })
+    email_verification_expires: Date | null;
   
     @CreateDateColumn()
     created_at: Date;

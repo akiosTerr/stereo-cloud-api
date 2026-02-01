@@ -8,6 +8,7 @@ import { Video } from './mux/entities/video.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { EmailModule } from './email/email.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import typeOrmConfig from './config/typeorm.config';
 
@@ -27,6 +28,7 @@ import typeOrmConfig from './config/typeorm.config';
     MuxModule,
     UsersModule,
     AuthModule,
+    EmailModule,
     WebhooksModule
   ],
   controllers: [AppController],

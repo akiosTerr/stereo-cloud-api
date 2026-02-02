@@ -17,6 +17,7 @@ coverage
 .env
 .env.*
 *.env
+prd/
 
 # IDE and editor files
 .idea

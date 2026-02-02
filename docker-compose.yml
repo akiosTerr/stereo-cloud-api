@@ -1,8 +1,9 @@
 services:
-  api:
+  cloud-midia-api:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: cloud-midia-api
     ports:
       - "3000:3000"
     volumes:
@@ -14,8 +15,35 @@ services:
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/database.sqlite
-    restart: unless-stopped                         
+    restart: unless-stopped
+    networks:
+      - default
+      - cloud-midia-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: cloud-midia-api-caddy
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - cloud-midia-network
 
 volumes:
   cloud-midia-data:
-    name: cloud-midia-data 
+    name: cloud-midia-data
+  caddy_data:
+  caddy_config:
+
+networks:
+  cloud-midia-network:
+    name: cloud-midia-network

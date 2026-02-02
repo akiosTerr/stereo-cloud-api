@@ -53,4 +53,14 @@ export class AuthService {
     await this.sendVerificationEmail(email, result.token);
     return true;
   }
+
+  async notifySupportOfActivation(user: {
+    id: string;
+    email: string;
+    name: string;
+    channel_name: string;
+    updated_at?: Date;
+  }): Promise<void> {
+    await this.emailService.sendActivationNotification(user);
+  }
 }

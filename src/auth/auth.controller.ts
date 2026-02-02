@@ -42,6 +42,7 @@ export class AuthController {
   @Get('confirm-email')
   async confirmEmail(@Query('token') token: string) {
     const user = await this.usersService.confirmEmailByToken(token);
+    await this.authService.notifySupportOfActivation(user);
     return { message: 'Email confirmed. You can sign in.', email: user.email };
   }
 

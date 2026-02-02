@@ -31,6 +31,9 @@ import { Exclude } from 'class-transformer';
     @Column({ default: false })
     email_verified: boolean;
 
+    @Column({ default: false })
+    is_admin: boolean;
+
     @Column({ nullable: true })
     email_verification_token: string | null;
 

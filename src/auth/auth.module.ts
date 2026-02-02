@@ -7,6 +7,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { TurnstileService } from './turnstile.service';
+import { AdminGuard } from './admin.guard';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { TurnstileService } from './turnstile.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TurnstileService],
-  exports: [JwtModule]
+  providers: [AuthService, JwtStrategy, TurnstileService, AdminGuard],
+  exports: [JwtModule, AdminGuard]
 })
 export class AuthModule {}

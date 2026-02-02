@@ -57,7 +57,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
     const user = await this.authService.validateUser(body.email, body.password);
-    return this.authService.login({ id: user.id, email: user.email, channel_name: user.channel_name });
+    return this.authService.login({ id: user.id, email: user.email, channel_name: user.channel_name, is_admin: user.is_admin });
   }
 
   @Post('validateToken')

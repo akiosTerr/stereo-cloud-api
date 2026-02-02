@@ -4,6 +4,7 @@ import { VideoStatus } from './entities/video.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/current-user.decorator';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { AdminGuard } from 'src/auth/admin.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('mux')
@@ -12,6 +13,7 @@ export class MuxController {
   constructor(private readonly muxService: MuxService) { }
 
   @Get('assets')
+  @UseGuards(AdminGuard)
   async getAssets() {
     return this.muxService.getAssets();
   }

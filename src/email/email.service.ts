@@ -37,6 +37,7 @@ export class EmailService {
 
   async sendActivationNotification(user: ActivationUserInfo): Promise<void> {
     const from = this.configService.get<string>('RESEND_FROM') || 'Cloud Midia <onboarding@resend.dev>';
+    const to = this.configService.get<string>('SUPPORT_EMAIL');
     const body = [
       `New account activated:`,
       ``,
@@ -49,7 +50,7 @@ export class EmailService {
 
     const { error } = await this.resend.emails.send({
       from,
-      to: ['support@wafflestream.com'],
+      to: [to],
       subject: `[WaffleStream] New account activated: ${user.email}`,
       text: body,
     });

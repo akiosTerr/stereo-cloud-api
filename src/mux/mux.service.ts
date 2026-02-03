@@ -232,7 +232,6 @@ export class MuxService {
     }
 
     findProfileByChannelName(channel_name: string) {
-        console.log(channel_name);
         return this.repo.find({
             where: { channel_name: Like(`%${channel_name}%`), isPrivate: false },
             order: { created_at: 'DESC' },

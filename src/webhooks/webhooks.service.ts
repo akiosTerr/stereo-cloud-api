@@ -15,8 +15,6 @@ export class WebhooksService {
     ) { }
 
     async handleMuxWebhook(body: MuxBodyWebHook, muxSignature: string) {
-        console.log('Mux Webhook received:', body);
-
         const eventType = body?.type;
         const assetId = body?.data?.id;
         const uploadId = body?.data?.upload_id;

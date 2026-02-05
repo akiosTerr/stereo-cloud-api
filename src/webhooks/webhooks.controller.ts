@@ -1,21 +1,6 @@
-import { Body, Controller, HttpCode, Post, Req, Headers, Res, HttpStatus } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Headers } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
-import { VideoStatus } from 'src/mux/entities/video.entity';
-
-
-export type MuxBodyWebHook = {
-    type: VideoStatus
-    data: {
-      id: string
-      upload_id: string
-      duration: number
-      meta: {
-        title?: string
-        creator_id: string
-      }
-      playback_ids : [{id: string, policy: string}]
-    }
-}
+import { MuxBodyWebHook } from './webhooks.types';
 
 @Controller('webhooks/mux')
 export class WebhooksController {

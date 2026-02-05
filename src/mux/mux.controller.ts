@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { MuxService } from './mux.service';
-import { VideoStatus } from './entities/video.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/current-user.decorator';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { AdminGuard } from 'src/auth/admin.guard';
+import { WebhookVideoStatus } from 'src/webhooks/webhooks.types';
 
 @UseGuards(JwtAuthGuard)
 @Controller('mux')
@@ -28,6 +28,25 @@ export class MuxController {
     return this.muxService.createUpload({ userId: user.userId, ...body });
   }
 
+  @Post('live-stream')
+  async createLiveStream(@Body() body: {
+    title?: string
+    isPrivate?: boolean;
+  }, @CurrentUser() user: { userId: string }
+  ) {
+    return this.muxService.createLiveStream({ userId: user.userId, ...body });
+  }
+
+  @Get('live-streams')
+  getLiveStreams(@CurrentUser() user: { userId: string }) {
+    return this.muxService.findAllLiveStreamsByUserId(user.userId);
+  }
+
+  @Delete('live-streams/:id')
+  deleteLiveStream(@Param('id') id: string) {
+    return this.muxService.deleteLiveStream(id);
+  }
+
   @Post()
   createVideo(
     @Body() body: {
@@ -36,8 +55,9 @@ export class MuxController {
       playback_id: string;
       title?: string;
       description?: string;
-      status?: VideoStatus;
+      status?: WebhookVideoStatus;
       duration?: number;
+      live_stream_id?: string;
     },
     @CurrentUser() user: { userId: string }
   ) {

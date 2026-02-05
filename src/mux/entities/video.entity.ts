@@ -11,12 +11,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { SharedVideo } from './shared-video.entity';
 import { Comment } from './comment.entity';
-
-export enum VideoStatus {
-    PREPARING = "preparing",
-    CREATED = 'video.asset.created',
-    READY = 'video.asset.ready',
-}
+import { WebhookVideoStatus } from 'src/webhooks/webhooks.types';
 
 @Entity('videos')
 export class Video {
@@ -51,11 +46,14 @@ export class Video {
     @Column({ nullable: true })
     channel_name?: string;
 
+    @Column({ nullable: true, type: 'uuid' })
+    live_stream_id?: string;
+
     @Column({
         type: 'text',
-        default: VideoStatus.PREPARING,
+        default: WebhookVideoStatus.CREATED,
     })
-    status: VideoStatus;
+    status: WebhookVideoStatus;
 
     @Column({ default: false })
     isPrivate: boolean;

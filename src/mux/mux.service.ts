@@ -4,11 +4,13 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import fetch from 'node-fetch';
 import Mux from '@mux/mux-node';
-import { Video, VideoStatus } from './entities/video.entity';
+import { Video } from './entities/video.entity';
 import { SharedVideo } from './entities/shared-video.entity';
 import { Comment } from './entities/comment.entity';
+import { LiveStream, LiveStreamStatus} from './entities/live-stream.entity';
 import { Like, Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
+import { WebhookStreamStatus, WebhookVideoStatus } from 'src/webhooks/webhooks.types';
 
 enum VideoQuality {
     basic = "basic",
@@ -29,12 +31,45 @@ interface MuxAsset {
     }[];
 }
 
+
+enum LatencyMode {
+    standard = "standard",
+    reduced = "reduced",
+    low = "low",
+}
+
+interface MuxLiveStreamResponse {
+    stream_key: string;
+    status: WebhookStreamStatus;
+    reconnect_window: number;
+    playback_ids: PlaybackId[];
+    new_asset_settings: {
+        playback_policies: Array<PlaybackPolicy>;
+    };
+    id: string;
+    created_at: string;
+    latency_mode: LatencyMode;
+    max_continuous_duration: number;
+}
+
+interface PlaybackId {
+    policy: PlaybackPolicy;
+    id: string;
+}
+
+const statusMap: Record<WebhookStreamStatus, LiveStreamStatus> = {
+    [WebhookStreamStatus.LIVE_STREAM_IDLE]: LiveStreamStatus.IDLE,
+    [WebhookStreamStatus.LIVE_STREAM_ACTIVE]: LiveStreamStatus.ACTIVE,
+    [WebhookStreamStatus.LIVE_STREAM_COMPLETED]: LiveStreamStatus.COMPLETED,
+};
+
 @Injectable()
 export class MuxService {
     constructor(
         @InjectRepository(Video) private repo: Repository<Video>,
         @InjectRepository(SharedVideo) private sharedVideoRepo: Repository<SharedVideo>,
         @InjectRepository(Comment) private commentRepo: Repository<Comment>,
+        @InjectRepository(LiveStream) private liveStreamRepo: Repository<LiveStream>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private usersService: UsersService,
     ) { }
@@ -71,7 +106,7 @@ export class MuxService {
             throw new InternalServerErrorException(`Mux API error: ${error}`);
         }
 
-        const assets = (await response.json()).data;    
+        const assets = (await response.json()).data;
 
         const filteredAssets = assets.filter((asset: MuxAsset) => asset.playback_ids[0].policy === PlaybackPolicy.public);
 
@@ -117,8 +152,7 @@ export class MuxService {
         }
 
         const uploadResponse = await response.json();
-        
-       
+
         const uploadId = uploadResponse?.data?.id || uploadResponse?.id;
         if (data.description && uploadId) {
             const cacheKey = `description_${uploadId}`;
@@ -129,8 +163,122 @@ export class MuxService {
         return uploadResponse;
     }
 
+    async createLiveStream(data: {
+        title?: string;
+        isPrivate?: boolean;
+        userId: string;
+    }): Promise<any> {
+        if (!this.muxTokenId || !this.muxTokenSecret) {
+            throw new InternalServerErrorException('MUX credentials are missing');
+        }
+
+        const credentials = Buffer.from(`${this.muxTokenId}:${this.muxTokenSecret}`).toString('base64');
+
+        const response = await fetch('https://api.mux.com/video/v1/live-streams', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${credentials}`,
+            },
+            body: JSON.stringify({
+                "playback_policies": [
+                    data.isPrivate ? PlaybackPolicy.signed : PlaybackPolicy.public
+                ],
+                "new_asset_settings": {
+                    "playback_policies": [
+                        data.isPrivate ? PlaybackPolicy.signed : PlaybackPolicy.public
+                    ]
+                },
+                meta: {
+                    title: data.title,
+                },
+                test: true
+            }),
+        });
+        
+        
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new InternalServerErrorException(`Mux live stream creation failed: ${errorText}`);
+        }
+        console.log("response: ", response);
+
+
+        const liveStreamResponse = await response.json();
+        const muxData = liveStreamResponse.data as MuxLiveStreamResponse;
+        console.log("muxData: ", muxData);
+        const playbackId = muxData.playback_ids?.[0]?.id;
+        if (!playbackId) {
+            throw new InternalServerErrorException('Mux live stream response missing playback_id');
+        }
+      
+        const entity = this.liveStreamRepo.create({
+            live_stream_id: muxData.id,
+            title: data.title,
+            isPrivate: data.isPrivate ?? false,
+            user_id: data.userId,
+            stream_key: muxData.stream_key,
+            status: LiveStreamStatus.IDLE,
+            playback_id: playbackId,
+        });
+        const saved = await this.liveStreamRepo.save(entity);
+        return { ...liveStreamResponse, liveStream: saved };
+    }
+
+    findAllLiveStreamsByUserId(userId: string) {
+        return this.liveStreamRepo.find({
+            where: { user_id: userId },
+            order: { created_at: 'DESC' },
+        });
+    }
+
+    findLiveStreamByLiveStreamId(live_stream_id: string) {
+        return this.liveStreamRepo.findOne({ where: { live_stream_id } });
+    }
+
+    async updateLiveStreamStatus(data: {
+        id: string;
+        status: WebhookStreamStatus;
+    }) {
+        const liveStream = await this.liveStreamRepo.findOne({ where: { live_stream_id: data.id } });
+        console.log("liveStream: ", liveStream);
+        if (!liveStream) {
+            throw new InternalServerErrorException('Live stream not found');
+        }
+        liveStream.status = statusMap[data.status] ?? LiveStreamStatus.IDLE;
+        return this.liveStreamRepo.save(liveStream);
+    }
+
+    async deleteLiveStream(id: string) {
+        if (!this.muxTokenId || !this.muxTokenSecret) {
+            throw new InternalServerErrorException('MUX credentials are missing');
+        }
+
+        const credentials = Buffer.from(`${this.muxTokenId}:${this.muxTokenSecret}`).toString('base64');
+
+        const response = await fetch(`https://api.mux.com/video/v1/live-streams/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${credentials}`,
+            },
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new InternalServerErrorException(`Mux live stream deletion failed: ${errorText}`);
+        }
+        const liveStream = await this.liveStreamRepo.findOne({ where: { live_stream_id: id } });
+        if (!liveStream) {
+            throw new NotFoundException('Live stream not found');
+        }
+        await this.liveStreamRepo.delete(liveStream.id);
+        return { message: 'Live stream deleted successfully' };
+    }
+
     async createVideo(data: {
         user_id: string;
+        live_stream_id?: string;
         upload_id: string;
         asset_id: string;
         playback_id: string;
@@ -138,27 +286,49 @@ export class MuxService {
         description?: string;
         channel_name?: string;
         isPrivate?: boolean;
-        status?: VideoStatus;
+        status?: WebhookVideoStatus;
     }) {
         const user = await this.usersService.findOne(data.user_id);
         if (user && user.channel_name) {
             data.channel_name = user.channel_name;
         }
-        const video = this.repo.create({ ...data });
+        const video = this.repo.create({ ...data, live_stream_id: data.live_stream_id ?? null });
         return this.repo.save(video);
     }
 
     async updateVideoStatus(data: {
         asset_id: string;
-        status?: VideoStatus;
+        status?: WebhookVideoStatus;
         duration?: number;
     }) {
         const video = await this.repo.findOne({ where: { asset_id: data.asset_id } });
         if (!video) {
             throw new InternalServerErrorException('Video not found');
         }
-        video.status = data.status;
-        video.duration = data.duration;
+        if (data.status !== undefined) {
+            video.status = data.status;
+        }
+        if (data.duration !== undefined) {
+            video.duration = data.duration;
+        }
+        return this.repo.save(video);
+    }
+
+    async updateVideoStatusByLiveStreamId(data: {
+        live_stream_id: string;
+        status?: WebhookVideoStatus;
+        duration?: number;
+    }) {
+        const video = await this.repo.findOne({ where: { live_stream_id: data.live_stream_id } });
+        if (!video) {
+            throw new InternalServerErrorException('Video not found');
+        }
+        if (data.status !== undefined) {
+            video.status = data.status;
+        }
+        if (data.duration !== undefined) {
+            video.duration = data.duration;
+        }
         return this.repo.save(video);
     }
 
@@ -215,9 +385,9 @@ export class MuxService {
 
     getHomeVideos(page: number = 1, limit: number = 10) {
         const skip = (page - 1) * limit;
-        return this.repo.find({ 
-            where: { isPrivate: false }, 
-            order: { created_at: 'DESC' }, 
+        return this.repo.find({
+            where: { isPrivate: false },
+            order: { created_at: 'DESC' },
             take: limit,
             skip: skip
         });
@@ -333,7 +503,6 @@ export class MuxService {
     }
 
     async getUsersVideoIsSharedWith(videoId: string, ownerUserId: string) {
-        // Verify video exists and belongs to the user
         const video = await this.repo.findOne({ where: { id: videoId } });
         if (!video) {
             throw new NotFoundException('Video not found');
@@ -362,12 +531,10 @@ export class MuxService {
             return false;
         }
 
-        // User owns the video
         if (video.user_id === userId) {
             return true;
         }
 
-        // Check if video is shared with user
         const sharedVideo = await this.sharedVideoRepo.findOne({
             where: { video_id: videoId, shared_with_user_id: userId },
         });
@@ -376,7 +543,6 @@ export class MuxService {
     }
 
     async createComment(videoId: string, userId: string, content: string) {
-        // Validate content
         const trimmedContent = content?.trim() || '';
         if (!trimmedContent) {
             throw new InternalServerErrorException('Comment content cannot be empty');
@@ -385,19 +551,16 @@ export class MuxService {
             throw new InternalServerErrorException('Comment content must not exceed 1000 characters');
         }
 
-        // Verify video exists
         const video = await this.repo.findOne({ where: { id: videoId } });
         if (!video) {
             throw new NotFoundException('Video not found');
         }
 
-        // Verify user exists
         const user = await this.usersService.findOne(userId);
         if (!user) {
             throw new NotFoundException('User not found');
         }
 
-        // Create comment
         const comment = this.commentRepo.create({
             video_id: videoId,
             user_id: userId,
@@ -405,8 +568,7 @@ export class MuxService {
         });
 
         const savedComment = await this.commentRepo.save(comment);
-        
-        // Return comment with user info
+
         return this.commentRepo.findOne({
             where: { id: savedComment.id },
             relations: ['user'],
@@ -414,13 +576,11 @@ export class MuxService {
     }
 
     async getCommentsByVideoId(videoId: string) {
-        // Verify video exists
         const video = await this.repo.findOne({ where: { id: videoId } });
         if (!video) {
             throw new NotFoundException('Video not found');
         }
 
-        // Get comments ordered by newest first
         const comments = await this.commentRepo.find({
             where: { video_id: videoId },
             relations: ['user'],
@@ -453,7 +613,6 @@ export class MuxService {
             throw new NotFoundException('Comment not found');
         }
 
-        // Verify ownership
         if (comment.user_id !== userId) {
             throw new ForbiddenException('You can only delete your own comments');
         }

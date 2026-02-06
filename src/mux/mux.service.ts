@@ -163,6 +163,8 @@ export class MuxService {
         return uploadResponse;
     }
 
+    private readonly MAX_LIVE_STREAMS_PER_USER = 3;
+
     async createLiveStream(data: {
         title?: string;
         isPrivate?: boolean;
@@ -170,6 +172,11 @@ export class MuxService {
     }): Promise<any> {
         if (!this.muxTokenId || !this.muxTokenSecret) {
             throw new InternalServerErrorException('MUX credentials are missing');
+        }
+
+        const existingStreams = await this.findAllLiveStreamsByUserId(data.userId);
+        if (existingStreams.length >= this.MAX_LIVE_STREAMS_PER_USER) {
+            throw new ForbiddenException(`Maximum of ${this.MAX_LIVE_STREAMS_PER_USER} livestreams allowed. Delete one to create a new one.`);
         }
 
         const credentials = Buffer.from(`${this.muxTokenId}:${this.muxTokenSecret}`).toString('base64');
@@ -192,7 +199,6 @@ export class MuxService {
                 meta: {
                     title: data.title,
                 },
-                test: true
             }),
         });
         
@@ -229,6 +235,17 @@ export class MuxService {
     findAllLiveStreamsByUserId(userId: string) {
         return this.liveStreamRepo.find({
             where: { user_id: userId },
+            order: { created_at: 'DESC' },
+        });
+    }
+
+    findAllPublicActiveLiveStreams() {
+        return this.liveStreamRepo.find({
+            where: {
+                isPrivate: false,
+                status: LiveStreamStatus.ACTIVE,
+            },
+            relations: ['user'],
             order: { created_at: 'DESC' },
         });
     }

@@ -37,6 +37,11 @@ export class MuxController {
     return this.muxService.createLiveStream({ userId: user.userId, ...body });
   }
 
+  @Get('live-streams/active')
+  getPublicActiveLiveStreams() {
+    return this.muxService.findAllPublicActiveLiveStreams();
+  }
+
   @Get('live-streams')
   getLiveStreams(@CurrentUser() user: { userId: string }) {
     return this.muxService.findAllLiveStreamsByUserId(user.userId);

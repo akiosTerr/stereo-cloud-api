@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { MuxService } from './mux.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/current-user.decorator';
@@ -166,6 +166,15 @@ export class MuxController {
   @Get('video/:videoId/livestream-status')
   async getLivestreamStatus(@Param('videoId') videoId: string) {
     return this.muxService.getLivestreamStatusByVideoId(videoId);
+  }
+
+  @Patch('video/:id')
+  async updateVideo(
+    @Param('id') id: string,
+    @Body() body: { title?: string; description?: string },
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.muxService.updateVideoMetadata(id, user.userId, body);
   }
 
   @Delete(':id/:asset_id')

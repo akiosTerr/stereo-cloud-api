@@ -346,6 +346,27 @@ export class MuxService {
         return this.repo.save(video);
     }
 
+    async updateVideoMetadata(
+        videoId: string,
+        userId: string,
+        data: { title?: string; description?: string },
+    ) {
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+        if (video.user_id !== userId) {
+            throw new ForbiddenException('You can only edit your own videos');
+        }
+        if (data.title !== undefined) {
+            video.title = data.title;
+        }
+        if (data.description !== undefined) {
+            video.description = data.description;
+        }
+        return this.repo.save(video);
+    }
+
     async signVideoToken(playback_id: string) {
 
         let baseOptions = {

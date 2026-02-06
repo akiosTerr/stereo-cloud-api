@@ -208,12 +208,10 @@ export class MuxService {
             const errorText = await response.text();
             throw new InternalServerErrorException(`Mux live stream creation failed: ${errorText}`);
         }
-        console.log("response: ", response);
 
 
         const liveStreamResponse = await response.json();
         const muxData = liveStreamResponse.data as MuxLiveStreamResponse;
-        console.log("muxData: ", muxData);
         const playbackId = muxData.playback_ids?.[0]?.id;
         if (!playbackId) {
             throw new InternalServerErrorException('Mux live stream response missing playback_id');
@@ -259,7 +257,6 @@ export class MuxService {
         status: WebhookStreamStatus;
     }) {
         const liveStream = await this.liveStreamRepo.findOne({ where: { live_stream_id: data.id } });
-        console.log("liveStream: ", liveStream);
         if (!liveStream) {
             throw new InternalServerErrorException('Live stream not found');
         }
@@ -412,6 +409,40 @@ export class MuxService {
 
     findByPlaybackId(playback_id: string) {
         return this.repo.findOne({ where: { playback_id }, relations: ['user'] });
+    }
+
+    async GetPlayerDataByPlaybackId(playback_id: string) {
+        const liveStream = await this.liveStreamRepo.findOne({ where: { playback_id } });
+        if (!liveStream) {
+            const video = await this.repo.findOne({ where: { playback_id } });
+            if (!video) {
+                throw new NotFoundException('Video and Live Stream not found by playback id');
+            }
+            return {
+                ...video,
+                isLivestream: false,
+                livestreamStatus: null,
+            };
+        }
+        const isLivestream = true;
+        const livestreamStatus = liveStream?.status;
+        return {
+            ...liveStream,
+            isLivestream,
+            livestreamStatus,
+        };
+    }
+
+    async getLivestreamStatusByVideoId(videoId: string) {
+        const video = await this.repo.findOne({ where: { id: videoId } });
+        if (!video || !video.live_stream_id) {
+            return { isLivestream: false, livestreamStatus: undefined };
+        }
+        const liveStream = await this.findLiveStreamByLiveStreamId(video.live_stream_id);
+        return {
+            isLivestream: true,
+            livestreamStatus: liveStream?.status,
+        };
     }
 
     findById(id: string) {

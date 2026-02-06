@@ -11,6 +11,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { EmailModule } from './email/email.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import typeOrmConfig from './config/typeorm.config';
+import { LiveCommentsModule } from './live-comments/live-comments.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import typeOrmConfig from './config/typeorm.config';
     UsersModule,
     AuthModule,
     EmailModule,
-    WebhooksModule
+    WebhooksModule,
+    LiveCommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

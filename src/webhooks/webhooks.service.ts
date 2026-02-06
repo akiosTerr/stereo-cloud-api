@@ -17,8 +17,6 @@ export class WebhooksService {
         const eventType = body?.type;
         const assetId = body?.data?.id;
         const uploadId = body?.data?.upload_id;
-        console.log("event type: ", eventType);
-        console.log("body: ", body);
 
 
         if (eventType === WebhookVideoStatus.CREATED) {
@@ -53,7 +51,6 @@ export class WebhooksService {
                 }
             }
 
-            console.log(userId);
 
 
             const videoData = {
@@ -80,7 +77,6 @@ export class WebhooksService {
         }
         else if (eventType === WebhookStreamStatus.LIVE_STREAM_ACTIVE) {
             console.log("live stream active");
-            console.log("live stream id: ", body?.data?.live_stream_id);
             
             this.muxService.updateLiveStreamStatus({
                 id: body?.data?.id,

@@ -52,6 +52,11 @@ export class MuxController {
     return this.muxService.deleteLiveStream(id);
   }
 
+  @Get('player/:playback_id')
+  async findOne(@Param('playback_id') playback_id: string) {
+    return this.muxService.GetPlayerDataByPlaybackId(playback_id);
+  }
+
   @Post()
   createVideo(
     @Body() body: {
@@ -158,9 +163,9 @@ export class MuxController {
     return this.muxService.deleteComment(commentId, user.userId);
   }
 
-  @Get(':playback_id')
-  findOne(@Param('playback_id') playback_id: string) {
-    return this.muxService.findByPlaybackId(playback_id);
+  @Get('video/:videoId/livestream-status')
+  async getLivestreamStatus(@Param('videoId') videoId: string) {
+    return this.muxService.getLivestreamStatusByVideoId(videoId);
   }
 
   @Delete(':id/:asset_id')

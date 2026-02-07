@@ -280,7 +280,9 @@ export class MuxService {
         });
         if (!response.ok) {
             const errorText = await response.text();
-            throw new InternalServerErrorException(`Mux live stream deletion failed: ${errorText}`);
+            if (errorText && !errorText.toLowerCase().includes('not found')) {
+                throw new InternalServerErrorException(`Mux live stream deletion failed: ${errorText}`);
+            } 
         }
         const liveStream = await this.liveStreamRepo.findOne({ where: { live_stream_id: id } });
         if (!liveStream) {
@@ -537,13 +539,14 @@ export class MuxService {
     }
 
     async unshareVideoWithUser(videoId: string, sharedWithUserId: string, sharedByUserId: string) {
-        // Verify video exists and belongs to the user
         const video = await this.repo.findOne({ where: { id: videoId } });
         if (!video) {
             throw new NotFoundException('Video not found');
         }
-        if (video.user_id !== sharedByUserId) {
-            throw new ForbiddenException('You can only unshare your own videos');
+        const isOwner = video.user_id === sharedByUserId;
+        const isRemovingSelf = sharedWithUserId === sharedByUserId;
+        if (!isOwner && !isRemovingSelf) {
+            throw new ForbiddenException('You can only unshare your own videos or remove a share from yourself');
         }
 
         const result = await this.sharedVideoRepo.delete({

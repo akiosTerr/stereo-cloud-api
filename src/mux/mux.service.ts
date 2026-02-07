@@ -407,16 +407,23 @@ export class MuxService {
         // return {token}
     }
 
-    async findAllPrivate(user_id: string) {
-        const ownVideos = await this.repo.find({
+    async findAllPrivate(user_id: string, page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
+        return this.repo.find({
             where: { user_id, isPrivate: true },
+            order: { created_at: 'DESC' },
+            take: limit,
+            skip,
         });
-        return ownVideos;
     }
 
-    findAllPublic(user_id: string) {
+    findAllPublic(user_id: string, page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
         return this.repo.find({
             where: { user_id, isPrivate: false },
+            order: { created_at: 'DESC' },
+            take: limit,
+            skip,
         });
     }
 
@@ -557,10 +564,14 @@ export class MuxService {
         return result;
     }
 
-    async getSharedVideosForUser(userId: string) {
+    async getSharedVideosForUser(userId: string, page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
         const sharedVideos = await this.sharedVideoRepo.find({
             where: { shared_with_user_id: userId },
             relations: ['video', 'video.user', 'sharedByUser'],
+            order: { created_at: 'DESC' },
+            take: limit,
+            skip,
         });
 
         return sharedVideos.map(sv => ({

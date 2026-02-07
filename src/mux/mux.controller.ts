@@ -84,9 +84,13 @@ export class MuxController {
 
   @Get()
   findAll(
-    @CurrentUser() user: { userId: string }
+    @CurrentUser() user: { userId: string },
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.muxService.findAllPublic(user.userId);
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.muxService.findAllPublic(user.userId, pageNum, limitNum);
   }
 
   @Get('home')
@@ -101,9 +105,13 @@ export class MuxController {
 
   @Get('private')
   findAllPrivate(
-    @CurrentUser() user: { userId: string }
+    @CurrentUser() user: { userId: string },
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.muxService.findAllPrivate(user.userId);
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.muxService.findAllPrivate(user.userId, pageNum, limitNum);
   }
 
   @Get('profile/:channel_name')
@@ -129,8 +137,14 @@ export class MuxController {
   }
 
   @Get('shared')
-  async getSharedVideos(@CurrentUser() user: { userId: string }) {
-    return this.muxService.getSharedVideosForUser(user.userId);
+  async getSharedVideos(
+    @CurrentUser() user: { userId: string },
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.muxService.getSharedVideosForUser(user.userId, pageNum, limitNum);
   }
 
   @Get('video/:videoId/shared-with')
